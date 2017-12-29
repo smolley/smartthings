@@ -16,13 +16,18 @@ metadata {
   definition (name: "Honeywell Partition", namespace: "redloro-smartthings", author: "redloro@gmail.com") {
     capability "Button"
     capability "Alarm"
-
+    capability "Sensor"
+    capability "Actuator"
+    
     command "partition"
-    command "disarm"
     command "armStay"
     command "armAway"
     command "armInstant"
+    command "disarm"
+    command "trigger1"
+    command "trigger2"
     command "chime"
+    command "bypass"
   }
 
   tiles(scale: 2) {
@@ -44,30 +49,47 @@ metadata {
     }
 
     standardTile("armAwayButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
-      state "default", label: 'Away', action: "armAway", icon: "st.Home.home3", backgroundColor: "#79b821"
+      state "default", label: 'Away', action: "armAway", icon: "st.security.alarm.on", backgroundColor: "#79b821"
     }
 
     standardTile("armStayButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
-      state "default", label: 'Stay', action: "armStay", icon: "st.Home.home3", backgroundColor: "#79b821"
-    }
-
-    standardTile("disarmButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
-      state "default", label: 'Disarm', action: "disarm", icon: "st.Home.home2", backgroundColor: "#C0C0C0"
+      state "default", label: 'Stay', action: "armStay", icon: "st.security.alarm.on", backgroundColor: "#79b821"
     }
 
     standardTile("armInstantButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
-      state "default", label: 'Instant', action: "armInstant", icon: "st.Home.home3", backgroundColor: "#79b821"
+      state "default", label: 'Instant', action: "armInstant", icon: "st.security.alarm.on", backgroundColor: "#79b821"
+    }
+
+    standardTile("disarmButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
+      state "default", label: 'Disarm', action: "disarm", icon: "st.security.alarm.off", backgroundColor: "#C0C0C0"
+    }
+
+    standardTile("trigger1Button","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
+      state "default", label: 'Trigger 1', action: "trigger1", icon: "st.Home.home30"
+    }
+
+    standardTile("trigger2Button","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
+      state "default", label: 'Trigger 2', action: "trigger2", icon: "st.Home.home30"
     }
 
     standardTile("chimeButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
-      state "default", label: 'Chime', action: "chime", icon: "st.custom.sonos.unmuted", backgroundColor: "#79b821"
+      state "default", label: 'Chime', action: "chime", icon: "st.custom.sonos.unmuted"
+    }
+
+    standardTile("bypassButton","device.button", width: 2, height: 2, canChangeIcon: true, decoration: "flat") {
+      state "default", label: 'Bypass', action: "bypass", icon: "st.locks.lock.unlocked"
     }
 
     main "partition"
 
     details(["partition",
-             "armAwayButton", "armStayButton", "disarmButton",
-             "armInstantButton", "chimeButton"])
+             "armAwayButton", "armStayButton", "armInstantButton",
+             "disarmButton", "trigger1Button", "trigger2Button",
+             "chimeButton", "bypassButton"])
+  }
+
+  preferences {
+    input name: "bypassZones", type: "text", title: "Bypass Zones", description: "Comma delimited list of zones to bypass", required: false
   }
 }
 
@@ -76,22 +98,34 @@ def partition(String state, String alpha) {
   sendEvent (name: "panelStatus", value: "${alpha}", displayed: false)
 }
 
-def disarm() {
-    parent.sendCommand('/plugins/envisalink/disarm');
-}
-
 def armAway() {
-    parent.sendCommand('/plugins/envisalink/armAway');
+  parent.sendCommandPlugin('/armAway');
 }
 
 def armStay() {
-    parent.sendCommand('/plugins/envisalink/armStay');
+  parent.sendCommandPlugin('/armStay');
 }
 
 def armInstant() {
-    parent.sendCommand('/plugins/envisalink/armInstant');
+  parent.sendCommandPlugin('/armInstant');
+}
+
+def disarm() {
+  parent.sendCommandPlugin('/disarm');
+}
+
+def trigger1() {
+  parent.sendCommandPlugin('/trigger/17');
+}
+
+def trigger2() {
+  parent.sendCommandPlugin('/trigger/18');
 }
 
 def chime() {
-    parent.sendCommand('/plugins/envisalink/chime');
+  parent.sendCommandPlugin('/chime');
+}
+
+def bypass() {
+  parent.sendCommandPlugin('/bypass/'+settings.bypassZones);
 }

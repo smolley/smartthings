@@ -1,5 +1,5 @@
 /**
- *  SmartThings SmartApp: Yamaha Network Receiver
+ *  SmartThings SmartApp: Yamaha MusicCast Receiver
  *
  *  Author: redloro@gmail.com
  *
@@ -12,16 +12,16 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  https://github.com/PSeitz/yamaha-nodejs
- *  http://<RECEIVER_IP_ADDRESS>/YamahaRemoteControl/desc.xml
+ *  http://github.com/redloro/smartthings/raw/master/smartapps/redloro-smartthings/musiccast-receiver.src/YXC_API_Spec_Basic.pdf
+ *  http://<RECEIVER_IP_ADDRESS>/YamahaExtendedControl/v1/system/getFeatures
  */
-import groovy.util.XmlSlurper
+import groovy.json.JsonSlurper
 
 definition(
-  name: "Yamaha Receiver",
+  name: "MusicCast Receiver",
   namespace: "redloro-smartthings",
   author: "redloro@gmail.com",
-  description: "Yamaha SmartApp",
+  description: "MusicCast SmartApp",
   category: "My Apps",
   iconUrl: "https://raw.githubusercontent.com/redloro/smartthings/master/images/yamaha-receiver.png",
   iconX2Url: "https://raw.githubusercontent.com/redloro/smartthings/master/images/yamaha-receiver.png",
@@ -32,10 +32,10 @@ preferences {
   section("SmartThings Hub") {
     input "hostHub", "hub", title: "Select Hub", multiple: false, required: true
   }
-  section("Yamaha Receiver") {
+  section("MusicCast Receiver") {
     input name: "receiverName", type: "text", title: "Name", required: true, defaultValue: "Yamaha"
     input name: "receiverIp", type: "text", title: "IP", required: true
-    input name: "receiverZones", type: "enum", title: "Zones", required: true, multiple: true, options: ["Main_Zone","Zone_B","Zone_2","Zone_3","Zone_4"]
+    input name: "receiverZones", type: "enum", title: "Zones", required: true, multiple: true, options: ["main","zone2","zone3","zone4"]
   }
 }
 
@@ -65,28 +65,18 @@ def lanResponseHandler(evt) {
 
   def headers = getHttpHeaders(map.headers);
   def body = getHttpBody(map.body);
-  //log.trace "Headers: ${headers}"
-  //log.trace "Body: ${body}"
+  log.trace "Headers: ${headers}"
+  log.trace "Body: ${body}"
 
-  updateZoneDevices(body.children()[0])
+  updateZoneDevices(body)
 }
 
 private updateZoneDevices(evt) {
   //log.debug "updateZoneDevices: ${evt.toString()}"
-  if (evt.name() == "System") {
-    //log.debug "Update all zones"
-    childDevices*.zone(evt)
-    return
-  }
 
-  def zonedevice = getChildDevice(getDeviceId(evt.name()))
+  //fixed zone to main - does not support multiple zones right now
+  def zonedevice = getChildDevice(getDeviceId("main"))
   if (zonedevice) {
-    zonedevice.zone(evt)
-  }
-
-  //check for Zone_B
-  zonedevice = getChildDevice(getDeviceId("Zone_B"))
-  if (zonedevice && evt.name() == "Main_Zone") {
     zonedevice.zone(evt)
   }
 }
@@ -96,8 +86,8 @@ private addChildDevices() {
   settings.receiverZones.each {
     def deviceId = getDeviceId(it)
     if (!getChildDevice(deviceId)) {
-      addChildDevice("redloro-smartthings", "Yamaha Zone", deviceId, hostHub.id, ["name": it, label: "${settings.receiverName}: ${it}", completedSetup: true])
-      log.debug "Added Yamaha zone: ${deviceId}"
+      addChildDevice("redloro-smartthings", "MusicCast Zone", deviceId, hostHub.id, ["name": it, label: "${settings.receiverName}: ${it}", completedSetup: true])
+      log.debug "Added MusicCast zone: ${deviceId}"
     }
   }
 
@@ -109,13 +99,12 @@ private removeChildDevices() {
 }
 
 private sendCommand(body) {
-  //log.debug "Yamaha Network Receiver send command: ${body}"
+  log.debug "MusicCast Receiver send command: ${body}"
 
   def hubAction = new physicalgraph.device.HubAction(
       headers: [HOST: getReceiverAddress()],
-      method: "POST",
-      path: "/YamahaRemoteControl/ctrl",
-      body: body
+      method: "GET",
+      path: "/YamahaExtendedControl/v1" + body
   )
   sendHubCommand(hubAction)
 }
@@ -132,13 +121,13 @@ private getHttpHeaders(headers) {
 private getHttpBody(body) {
   def obj = null;
   if (body) {
-    obj = new XmlSlurper().parseText(new String(body.decodeBase64()))
+    obj = new JsonSlurper().parseText(new String(body.decodeBase64()))
   }
   return obj
 }
 
 private getDeviceId(zone) {
-  return "yamaha|${settings.receiverIp}|${zone}"
+  return "musiccast|${settings.receiverIp}|${zone}"
 }
 
 private getReceiverAddress() {

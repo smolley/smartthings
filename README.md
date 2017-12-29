@@ -3,6 +3,7 @@
 Repository for all things related to SmartThings.
 - SmartThing Node Proxy
   - Envisalink Vista TPI Plugin
+  - AlarmDecoder AD2USB Plugin
   - Russound RNET Plugin
   - Monoprice 6-Zone Amplifier Plugin
 - SmartThings SmartApps
@@ -38,17 +39,22 @@ config.json
   cd ~/smartthings-nodeproxy
   npm install
   ```
-4. Edit `config.json`
-  * Remove all comments
+4. Rename `config.json.sample` to `config.json`
   * Set *port*
-  * Set *authCode*.
-5. Create folder ~/smartthings-nodeproxy/plugins
-6. Start the service using the included script:
+  * Set *authCode*
+5. Create folder `~/smartthings-nodeproxy/plugins`
+6. Copy desired plugins in to `plugins` folder
+7. Download and install plugin dependencies:
 
   ```
-  ./restart.me
+  npm run install:<plugin>
   ```
-7. Open a browser and test access:
+8. Start the server:
+
+  ```
+  npm run start
+  ```
+9. Open a browser and test access:
 
   ```
   http://<proxy-ip>:<port>
@@ -84,7 +90,7 @@ SmartThings Node Proxy sample plugin with corresponding SmartThings SmartApp and
 2. Generic SmartApp will route inbound messages to Generic Device AND route outbound messages to SmartThings Node Proxy
 3. Generic Device will submit a message to Generic SmartApp (parent app) to send to STNP AND update the tiles with any message received and flip the on/off switch
 
-### Envisalink Vista TPI Plugin
+### Envisalink Vista TPI Plugin / AlarmDecoder AD2USB
 SmartThings Node Proxy plugin to connect over local lan to a Honeywell / Ademco Vista 20p alarm panel.
 
 Supports the following zone types:
@@ -95,7 +101,10 @@ Supports the following zone types:
 Supports the following actions:
 - Arm Away
 - Arm Stay
+- Arm Instant
 - Disarm
+- Chime
+- Zone Bypass
 
 #### Config
 ```
@@ -105,6 +114,25 @@ config.json
     "address": "192.168.1.11",    // OPTIONAL (can be set via SmartApp): Address of Envisalink Vista TPI module
     "port": "4025",               // OPTIONAL (can be set via SmartApp): Envisalink port - default is 4025
     "password": "user",           // OPTIONAL (can be set via SmartApp): Envisalink password - default is user
+    "securityCode": "1234",       // OPTIONAL (can be set via SmartApp): Security code to arm/disarm the panel
+
+    "panelConfig": {              // REQUIRED: Set this to define partitions and zones
+      "type": "discover",
+      "partitions": [
+        {"partition": 1, "name": "Security Panel"}
+      ],
+      "zones": [
+        {"zone": 1, "type": "smoke", "name": "Smoke Detector"},
+        {"zone": 2, "type": "contact", "name": "Front Door"},
+        {"zone": 3, "type": "contact", "name": "Back Door"},
+        {"zone": 4, "type": "contact", "name": "Kitchen Door"},
+        {"zone": 5, "type": "contact", "name": "Kitchen Window"}
+      ]
+    }
+  }
+
+  "ad2usb": {
+    "serialPort": "COM2",         // RS-232 port connected to AD2USB
     "securityCode": "1234",       // OPTIONAL (can be set via SmartApp): Security code to arm/disarm the panel
 
     "panelConfig": {              // REQUIRED: Set this to define partitions and zones
